@@ -6,6 +6,9 @@ APP_NAME=trading-server
 BINARY_PATH=bin/$(APP_NAME)
 GO_FILES=$(shell find . -name "*.go" -type f)
 
+
+all: help
+
 # Help
 help: ## Mostra esta ajuda
 	@echo "🏆 Sistema de Trading - Avenue"
@@ -157,6 +160,3 @@ info: ## Mostra informações do projeto
 	@echo "  API Orders: http://localhost:8080/orders"
 	@echo "  Order Book: http://localhost:8080/orderbook/{symbol}"
 	@echo "  Portfolio: http://localhost:8080/portfolio/{user_id}"
-
-# Default
-.DEFAULT_GOAL := help
