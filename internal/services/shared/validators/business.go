@@ -1,29 +1,78 @@
 package validators
 
 import (
+	"encoding/json"
+	"log"
+	"os"
 	"trading/internal/domain"
 )
 
 // BusinessValidator implementa validações de regras de negócio
 type BusinessValidator struct {
 	// TODO: Implementar campos necessários (ex: stocks map)
+	stocks map[string]Stock
+}
+
+type Stock struct {
+	company     string  `json:"company"`
+	sector      string  `json:"sector"`
+	minPrice    float64 `json:"min_price"`
+	marketCap   string  `json:"market_cap"`
+	description string  `json:"description"`
 }
 
 // NewBusinessValidator cria um novo validador de negócio
 func NewBusinessValidator() *BusinessValidator {
 	validator := &BusinessValidator{
 		// TODO: Inicializar campos
+		stocks: make(map[string]Stock),
 	}
 
 	// TODO: Carregar dados de ações do arquivo JSON
+	content, err := os.ReadFile("../../../data/stocks.json")
+	if err != nil {
+		log.Fatal("Error when opening stocks file: ", err)
+	}
+	err = json.Unmarshal(content, &validator.stocks)
+	if err != nil {
+		log.Fatal("Error when parsing stocks file: ", err)
+	}
+
+	for _, stock := range validator.stocks {
+		log.Println(stock.description)
+	}
 	return validator
 }
 
 // ValidateOrder valida uma ordem completa
 func (v *BusinessValidator) ValidateOrder(order *domain.Order) error {
 	// TODO: Implementar validações completas
+	if order == nil {
+		log.Println("Order is nil")
+		return nil
+	}
+
+	var orderStock Stock
+
+	for symbol, stock := range v.stocks {
+		if symbol == order.Symbol {
+			orderStock = stock
+		}
+	}
+
 	// 1. Validar símbolo existe
+	if (Stock{}) == orderStock {
+		log.Printf("Stock %s not found", order.Symbol)
+		return nil
+	}
+
 	// 2. Validar preço mínimo
+	if order.Price <= orderStock.minPrice {
+		log.Printf("Order %s is lower than the minimum price", order.Symbol)
+		return nil
+	}
+
+	
 	// 3. Validar horário de mercado
 	// 4. Validar campos básicos
 

@@ -6,16 +6,12 @@ import (
 	"testing"
 
 	restful "github.com/emicklei/go-restful/v3"
-
-	"trading/internal/services/web/handlers"
 )
 
 // TestWebServiceEndpoints testa se todos os endpoints estão funcionando
 func TestWebServiceEndpoints(t *testing.T) {
-	// Setup
-	container := handlers.NewInternalWebRestfulContainer()
-	restful.DefaultContainer.Router(restful.CurlyRouter{})
-	restful.Add(container.GetWS())
+	// Setup (reutiliza o servidor se já foi inicializado pelos outros testes)
+	setupTestServer(t)
 
 	// Testa health check
 	t.Run("HealthCheck", func(t *testing.T) {
