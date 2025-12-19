@@ -1,5 +1,5 @@
 # Sistema de Trading - Makefile
-.PHONY: help setup build run test test-unit test-integration test-coverage clean lint docker-build docker-run
+.PHONY: help setup build run test test-unit test-integration test-race test-race-short test-coverage clean lint docker-build docker-run
 
 # Variáveis
 APP_NAME=trading-server
@@ -38,8 +38,8 @@ run-web: ## Executa o web service
 	go run internal/services/web/cmd/main.go
 
 run-engine: ## Executa o engine service (TODO: implementar)
-	@echo "🚀 Engine service não implementado ainda..."
-	@echo "TODO: Implementar internal/services/engine/cmd/main.go"
+	@echo "🚀 Iniciando servidor principal..."
+	go run cmd/server/main.go
 
 # Run com build
 run-binary: build ## Compila e executa o binário
@@ -58,6 +58,16 @@ test-unit: ## Executa testes unitários
 test-integration: ## Executa testes de integração
 	@echo "🧪 Executando testes de integração..."
 	go test -v ./tests/integration/...
+
+test-race: ## Executa testes com race detector (detecta condições de corrida)
+	@echo "🔍 Executando testes com race detector..."
+	@echo "⚠️  Importante: Race detector verifica condições de corrida (race conditions)"
+	@echo "   Se encontrar problemas, adicione sync.Mutex nos locais indicados!"
+	go test -race -v ./...
+
+test-race-short: ## Executa apenas testes de integração com race detector
+	@echo "🔍 Executando testes de integração com race detector..."
+	go test -race -v ./tests/integration/...
 
 test-coverage: ## Executa testes com cobertura
 	@echo "🧪 Executando testes com cobertura..."
