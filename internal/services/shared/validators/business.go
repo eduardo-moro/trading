@@ -54,50 +54,51 @@ type TradingRules struct {
 	LotSize       float64 `json:"lot_size"`
 }
 
-// NewBusinessValidator cria um novo validador de negócio
-func NewBusinessValidator() *BusinessValidator {
+func NewBusinessValidator() (*BusinessValidator, error) {
 	validator := &BusinessValidator{
-		// TODO: Inicializar campos
 		Metadata:     Metadata{},
 		Stocks:       make(map[string]Stock),
 		MarketHours:  MarketHours{},
 		TradingRules: TradingRules{},
 	}
 
-	// TODO: Carregar dados de ações do arquivo JSON
+	if err := validator.populate(); err != nil {
+		return nil, err
+	}
+
+	return validator, nil
+}
+
+func (v *BusinessValidator) populate() error {
 	content, err := os.ReadFile("../../../../data/stocks.json")
+
 	if err != nil {
 		log.Fatal("Error when opening stocks file: ", err)
 	}
-	err = json.Unmarshal(content, &validator)
-	if err != nil {
+
+	if err = json.Unmarshal(content, &v); err != nil {
 		log.Fatal("Error when parsing stocks file: ", err)
+		return err
 	}
 
-	return validator
+	return nil
 }
 
 // ValidateOrder valida uma ordem completa
 func (v *BusinessValidator) ValidateOrder(order *domain.Order) error {
-	// TODO: Implementar validações completas
 	if order == nil {
 		log.Println("Order is nil")
 		return errors.New("order cannot be nil")
 	}
 
-	var orderStock Stock
-
-	for symbol, stock := range v.Stocks {
-		if symbol == order.Symbol {
-			orderStock = stock
-		}
-	}
-
 	// 1. Validar símbolo existe
-	if (Stock{}) == orderStock {
-		log.Printf("Stock %s not found", order.Symbol)
-		return errors.New("order stock not found")
+	err := v.ValidateSymbol(order.Symbol)
+	if err != nil {
+		return err
 	}
+
+	// Get stock information after validation
+	orderStock := v.Stocks[order.Symbol]
 
 	// 2. Validar preço mínimo
 	if order.Price < orderStock.MinPrice {
@@ -152,9 +153,12 @@ func (v *BusinessValidator) ValidateOrder(order *domain.Order) error {
 
 // ValidateSymbol valida se o símbolo existe
 func (v *BusinessValidator) ValidateSymbol(symbol string) error {
-	// TODO: Implementar validação de símbolo
-	// 1. Verificar se símbolo está na lista de 20 ações
-	// 2. Retornar erro se não encontrado
+	_, exists := v.Stocks[symbol]
+
+	if !exists {
+		log.Printf("Stock %s not found", symbol)
+		return errors.New("order stock not found")
+	}
 
 	return nil
 }

@@ -220,7 +220,7 @@ func TestBusinessRules_ProfileLimits(t *testing.T) {
 			profile:          "conservador",
 			cash:             5000.00,
 			maxPercentage:    10,
-			orderValue:       450.00, // 9% do patrimônio
+			orderValue:       450.00,
 			shouldBeRejected: false,
 		},
 		{
@@ -229,7 +229,7 @@ func TestBusinessRules_ProfileLimits(t *testing.T) {
 			profile:          "conservador",
 			cash:             5000.00,
 			maxPercentage:    10,
-			orderValue:       600.00, // 12% do patrimônio (max_order_value é 500)
+			orderValue:       600.00,
 			shouldBeRejected: true,
 		},
 		{

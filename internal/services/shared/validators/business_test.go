@@ -9,8 +9,9 @@ import (
 )
 
 func TestNewBusinessValidator(t *testing.T) {
-	businessValidator := NewBusinessValidator()
+	businessValidator, err := NewBusinessValidator()
 
+	assert.Nil(t, err)
 	assert.NotNil(t, businessValidator)
 }
 
@@ -26,7 +27,9 @@ func TestBusinessValidator_ValidateOrder(t *testing.T) {
 		{"AAPL", 200, "2025-08-10 12:00", true},
 		{"AAPL", 2_800_000_000_000_000, "2025-08-10 12:00", true},
 	}
-	businessValidator := NewBusinessValidator()
+
+	businessValidator, err := NewBusinessValidator()
+	assert.Nil(t, err)
 
 	assert.NotNil(t, businessValidator)
 	order := &domain.Order{
