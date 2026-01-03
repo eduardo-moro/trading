@@ -29,4 +29,7 @@ var (
 
 	// Matching errors
 	ErrNoMatch = errors.New("nenhuma correspondência encontrada")
+
+	// File Reading errors
+	ErrCantParseTime = errors.New("could not parse open time")
 )

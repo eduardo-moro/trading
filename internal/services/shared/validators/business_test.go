@@ -1,5 +1,7 @@
 package validators
 
+// TODO: Implementar Time via injeção de dependência para permitir consistência nos testes.
+
 import (
 	"testing"
 	"time"
