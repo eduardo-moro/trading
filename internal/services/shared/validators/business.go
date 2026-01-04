@@ -4,9 +4,14 @@ import (
 	"encoding/json"
 	"log"
 	"os"
+	"strconv"
 	"time"
 	"trading/internal/domain"
 )
+
+type Time interface {
+	Now() time.Time
+}
 
 // BusinessValidator implementa validações de regras de negócio
 type BusinessValidator struct {
@@ -14,14 +19,16 @@ type BusinessValidator struct {
 	Stocks       map[string]domain.Stock `json:"stocks"`
 	MarketHours  domain.MarketHours      `json:"market_hours"`
 	TradingRules domain.TradingRules     `json:"trading_rules"`
+	Time         Time
 }
 
-func NewBusinessValidator() (*BusinessValidator, error) {
+func NewBusinessValidator(time Time) (*BusinessValidator, error) {
 	validator := &BusinessValidator{
 		Metadata:     domain.Metadata{},
 		Stocks:       make(map[string]domain.Stock),
 		MarketHours:  domain.MarketHours{},
 		TradingRules: domain.TradingRules{},
+		Time:         time,
 	}
 
 	if err := validator.populate(); err != nil {
@@ -71,6 +78,11 @@ func (v *BusinessValidator) ValidateOrder(order *domain.Order) error {
 		return err
 	}
 
+	// 4. Valida o teto do mercado
+	if err = v.ValidateMarketCap(order.Symbol, order.Price); err != nil {
+		return err
+	}
+
 	return err
 }
 
@@ -102,10 +114,9 @@ func (v *BusinessValidator) ValidateMinPrice(symbol string, price float64) error
 }
 
 func (v *BusinessValidator) ValidateMarketHours() error {
-	now := time.Now()
+	now := v.Time.Now()
 
 	openTime, err := time.Parse("15:04", v.MarketHours.RegularHours.Open)
-
 	if err != nil {
 		log.Printf("Error when parsing open time: %v", err)
 		return domain.ErrCantParseTime
@@ -117,20 +128,26 @@ func (v *BusinessValidator) ValidateMarketHours() error {
 		return domain.ErrCantParseTime
 	}
 
-	if now.Before(openTime) || now.After(closeTime) {
-		log.Printf("Invalid operation time")
+	nowTime, err := time.Parse("15:04", now.Format("15:04"))
+	if err != nil {
+		log.Printf("Error when parsing now time: %v", err)
+		return domain.ErrCantParseTime
+	}
+
+	if nowTime.Before(openTime) || nowTime.After(closeTime) {
+		log.Printf("Invalid operation time %s", now.Format("2006-01-02 15:04 Mon"))
 		return domain.ErrMarketClosed
 	}
 
 	found := false
 	for day := range v.MarketHours.RegularHours.Days {
-		if day == now.Day() {
+		if v.MarketHours.RegularHours.Days[day] == now.Weekday().String() {
 			found = true
 		}
 	}
 
 	if !found {
-		log.Printf("Invalid operation day")
+		log.Printf("Invalid operation day %s", now.Weekday().String())
 		return domain.ErrMarketClosed
 	}
 
@@ -140,5 +157,41 @@ func (v *BusinessValidator) ValidateMarketHours() error {
 			return domain.ErrMarketClosed
 		}
 	}
+	return nil
+}
+
+func (v *BusinessValidator) ValidateMarketCap(symbol string, price float64) error {
+	orderStock := v.Stocks[symbol]
+
+	cap, err := strconv.ParseFloat(orderStock.MarketCap[0:len(orderStock.MarketCap)-1], 32)
+	if err != nil {
+		log.Printf("Unable to parse cap: %s", err)
+		return err
+	}
+
+	var multipliers = map[byte]int{
+		'T': 100_000_000_000,
+		'B': 100_000_000,
+		'M': 100_000,
+	}
+
+	capMultiplier := multipliers[orderStock.MarketCap[len(orderStock.MarketCap)-1]]
+
+	/*
+	 * Eu não gosto nada da idéia de trabalar com float para
+	 * dados financeiros, porém é como os dados estão descritos,
+	 * implementações com conversão à int, precisaram de
+	 * arredondamento, o que não faz sentido, preferi tratar
+	 * os valores da forma como vieram.
+	 *
+	 * » Seria consequência de vibe coding do "banco de dados"? «
+	 */
+	cap = cap * 10
+	cap = cap * float64(capMultiplier)
+
+	if price > cap {
+		return domain.ErrPriceTooHigh
+	}
+
 	return nil
 }

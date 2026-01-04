@@ -15,6 +15,7 @@ var (
 	// Stock errors
 	ErrInvalidSymbol   = errors.New("símbolo inválido")
 	ErrPriceTooLow     = errors.New("preço abaixo do mínimo permitido")
+	ErrPriceTooHigh    = errors.New("preço acima do teto permitido")
 	ErrInvalidPrice    = errors.New("preço inválido")
 	ErrInvalidQuantity = errors.New("quantidade inválida")
 
